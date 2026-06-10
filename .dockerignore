@@ -1,0 +1,28 @@
+# Build context is the repo root — keep the backend image lean and reproducible.
+**/.venv
+**/__pycache__
+**/*.pyc
+**/.pytest_cache
+**/.ruff_cache
+
+# Local state / PHI — never bake into the image (mount a volume at runtime instead).
+data/
+vector_store/
+*.db
+*.db-shm
+*.db-wal
+
+# Frontend (deploys to Vercel, not in this image)
+frontend/node_modules
+frontend/.next
+frontend/.next-e2e
+frontend/out
+
+# Tests / tooling
+tests/e2e/node_modules
+tests/e2e/test-results
+tests/e2e/playwright-report
+**/.git
+**/.env
+**/.env.*
+!**/.env.example

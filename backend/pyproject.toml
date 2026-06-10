@@ -1,0 +1,73 @@
+[project]
+name = "medexplain-backend"
+version = "0.1.0"
+description = "MedExplain AI backend — local, CPU-only educational medical report interpreter (FastAPI)."
+requires-python = ">=3.10"
+readme = "README.md"
+dependencies = [
+    "fastapi>=0.115,<0.117",
+    "uvicorn[standard]>=0.30,<0.35",
+    "python-multipart>=0.0.9",          # multipart/form-data for upload (P3)
+    "SQLAlchemy>=2.0,<2.1",
+    "pydantic>=2.7,<3.0",
+    "pydantic-settings>=2.3,<3.0",
+    "email-validator>=2.1",             # EmailStr support
+    "bcrypt>=4.1,<5.0",                 # password hashing (used directly; no passlib)
+    "PyJWT>=2.8,<3.0",                  # JWT encode/decode
+    # --- Phase 3: document processing (native-text-first) ---
+    "pymupdf>=1.24,<1.27",             # PDF text extraction + page rendering
+    "pdfplumber>=0.11,<0.12",          # table extraction from digital PDFs
+    "pillow>=10.2,<12.0",              # image loading/normalization
+    "numpy>=1.26,<2.0",                # arrays (pinned <2 for PaddleOCR/paddle compatibility)
+    # --- Phase 4: extraction + abnormality rules ---
+    "pyyaml>=6.0,<7.0",                # biomarker catalog (aliases, units, default ranges, rules)
+    # --- Phase 10: PDF export (pure-Python, no native deps; per-page disclaimer via footer) ---
+    "fpdf2>=2.7,<3.0",
+    # RUNTIME dep: the LLM router (services/llm_service.py) calls Ollama/Gemini over httpx.
+    # Must be a base dependency — a prod `uv sync --no-dev` would otherwise drop it (it also
+    # backs the FastAPI TestClient, so the dev group no longer needs to list it).
+    "httpx>=0.27,<0.29",
+]
+
+[project.optional-dependencies]
+# OCR is a heavy, optional extra (only needed for scanned/image pages). Install with:
+#   uv sync --extra ocr
+ocr = [
+    "paddleocr>=2.7,<3.0",            # OCR engine (stable .ocr() API on the 2.x line)
+    "paddlepaddle>=2.6,<3.0",         # CPU inference backend for PaddleOCR
+    "setuptools>=69",                  # paddle imports setuptools at runtime (uv venvs omit it)
+]
+
+# Semantic free-text RAG (Phase 7 / chat) — OFF by default. ChromaDB does not build on this
+# machine (chroma-hnswlib needs MSVC C++ build tools), so the semantic index uses bge
+# embeddings over a small numpy cosine store instead (app/services/semantic_index.py). Chat
+# and the Phase 5 report-explanation path use deterministic canonical-name KB retrieval and
+# need neither; the index only augments general free-text chat when explicitly enabled via
+#   uv sync --extra rag   +   MEDEXPLAIN_USE_SEMANTIC_RAG=true
+rag = [
+    "sentence-transformers>=2.7,<4.0",   # BAAI/bge-small-en-v1.5 embeddings (pulls torch; heavy)
+    # numpy is already a base dependency (the cosine store needs nothing more)
+]
+
+# Further phases add their own extras (spaCy/MedSpaCy [nlp], …) to keep the base install light.
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0,<9.0",
+    # httpx is a base runtime dependency (above) — it also serves the TestClient transport.
+]
+
+[tool.uv]
+package = false                        # this is an application, not an installable library
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+ignore = ["E501"]   # line length handled by the formatter
+
+[tool.black]
+line-length = 100
+target-version = ["py312"]

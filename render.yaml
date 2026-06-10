@@ -1,0 +1,34 @@
+# Render Blueprint for the MedExplain AI backend (Docker + persistent disk).
+# Deploy: push to GitHub → Render → New → Blueprint → pick this repo.
+# Then set the two `sync: false` secrets in the dashboard (Gemini key + your Vercel URL).
+#
+# NOTE: a persistent disk requires a paid instance type (free has no disk). The disk + SQLite
+# mean exactly ONE instance — which matches the single-worker design (do not scale out).
+services:
+  - type: web
+    name: medexplain-backend
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: .
+    plan: starter
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: MEDEXPLAIN_ENV
+        value: prod
+      - key: MEDEXPLAIN_JWT_SECRET
+        generateValue: true # Render generates a strong secret
+      - key: MEDEXPLAIN_DEFAULT_LLM_MODE
+        value: cloud
+      - key: MEDEXPLAIN_GEMINI_MODEL
+        value: gemini-2.5-flash
+      - key: MEDEXPLAIN_MAX_UPLOAD_MB
+        value: "20"
+      - key: MEDEXPLAIN_GEMINI_API_KEY
+        sync: false # set in the dashboard (secret)
+      - key: MEDEXPLAIN_CORS_ORIGINS
+        sync: false # set to your Vercel URL, e.g. https://your-app.vercel.app
+    disk:
+      name: medexplain-data
+      mountPath: /app/data # SQLite DB + uploaded files persist here
+      sizeGB: 1
