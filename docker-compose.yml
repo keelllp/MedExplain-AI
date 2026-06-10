@@ -1,10 +1,9 @@
-# Local backend container — test the production image before deploying.
-# (The frontend deploys to Vercel separately; see DEPLOYMENT.md.)
+# Backend container — works locally AND on a server (GCP free VM, VPS, etc.).
+# ALL config comes from backend/.env (create it from backend/.env.example).
 #
-#   docker compose up --build      # → backend on http://localhost:8000 (/docs, /health)
+#   docker compose up -d --build     # → backend on http://localhost:8000 (/health, /docs)
 #
-# Reuses backend/.env for the Gemini key etc.; runs in dev mode locally so it boots with the
-# default JWT secret. A real deployment uses MEDEXPLAIN_ENV=prod + a strong MEDEXPLAIN_JWT_SECRET.
+# The ./data volume persists the SQLite DB + uploaded files across restarts/reboots.
 services:
   backend:
     build:
@@ -17,9 +16,6 @@ services:
       - "8000:8000"
     env_file:
       - ./backend/.env
-    environment:
-      MEDEXPLAIN_ENV: dev
-      MEDEXPLAIN_CORS_ORIGINS: http://localhost:3000
     volumes:
       - ./data:/app/data # persist the SQLite DB + uploaded files
     restart: unless-stopped
