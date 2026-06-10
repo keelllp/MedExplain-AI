@@ -1,0 +1,182 @@
+@import "tailwindcss";
+
+/* ============================================================================
+   MedExplain AI — design system
+   Aesthetic: warm editorial-clinical. A calm, trustworthy health publication.
+   LIGHT THEME ONLY (no dark mode — by product decision).
+   ----------------------------------------------------------------------------
+   Type:  Fraunces (display serif) · Hanken Grotesk (body) · Geist Mono (data)
+   Color: warm "paper" canvas · deep ink text · deep teal brand · clay accent
+   ========================================================================== */
+
+@theme {
+  /* Fonts — wired from next/font CSS variables set on <html> in layout.tsx */
+  --font-sans: var(--font-hanken), ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-serif: var(--font-fraunces), ui-serif, "Iowan Old Style", Georgia, serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, "SFMono-Regular", "Menlo", monospace;
+
+  /* Canvas & surfaces */
+  --color-paper: #f7f4ec;          /* warm app background */
+  --color-surface: #ffffff;        /* cards, inputs */
+  --color-surface-sunken: #f1ede3; /* subtle fills, table headers, disabled */
+
+  /* Ink (text) */
+  --color-ink: #1d2a25;            /* primary text — warm near-black, ties to teal */
+  --color-ink-muted: #5c6b63;      /* secondary text */
+  --color-ink-faint: #8b988f;      /* tertiary text, placeholders */
+
+  /* Lines */
+  --color-line: #e7e2d6;           /* default hairline border */
+  --color-line-strong: #d6cfbf;    /* input borders, dividers needing weight */
+
+  /* Brand — deep teal / pine */
+  --color-brand: #11675c;
+  --color-brand-strong: #0c4f46;
+  --color-brand-tint: #e1efeb;
+
+  /* Accent — warm clay (sparingly, for highlights) */
+  --color-accent: #c25e3a;
+  --color-accent-tint: #f7e7df;
+
+  /* Clinical status — distinct hues, all AA on their tints */
+  --color-ok: #1f7a4d;             /* normal */
+  --color-ok-tint: #e4f2e8;
+  --color-warn: #946408;           /* mild */
+  --color-warn-tint: #fbf0d6;
+  --color-elevated: #b1521c;       /* moderate */
+  --color-elevated-tint: #fbe7d6;
+  --color-alert: #b42318;          /* severe / danger */
+  --color-alert-tint: #fbe2dd;
+  --color-info: #1f5fa8;           /* processing / cloud AI */
+  --color-info-tint: #e3ecf8;
+
+  /* Radius */
+  --radius-xl: 1rem;
+  --radius-2xl: 1.25rem;
+
+  /* Shadows — soft, warm-tinted */
+  --shadow-card: 0 1px 2px rgba(29, 42, 37, 0.04), 0 10px 30px -16px rgba(29, 42, 37, 0.16);
+  --shadow-lift: 0 2px 6px rgba(29, 42, 37, 0.05), 0 18px 40px -20px rgba(29, 42, 37, 0.22);
+  --shadow-focus: 0 0 0 4px rgba(17, 103, 92, 0.12);
+
+  /* Motion */
+  --ease-out-soft: cubic-bezier(0.21, 0.7, 0.2, 1);
+
+  --animate-rise: rise 0.6s var(--ease-out-soft) both;
+  --animate-fade: fade 0.5s ease both;
+}
+
+@layer base {
+  :root {
+    color-scheme: light; /* force light browser chrome — pickers, scrollbars, autofill */
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    min-height: 100vh;
+    background-color: var(--color-paper);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-feature-settings: "ss01", "cv01";
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    /* atmosphere: two faint corner washes so the canvas reads as paper, not flat */
+    background-image:
+      radial-gradient(1100px 560px at 100% -8%, rgba(17, 103, 92, 0.07), transparent 62%),
+      radial-gradient(820px 460px at -8% -4%, rgba(194, 94, 58, 0.06), transparent 56%);
+    background-attachment: fixed;
+  }
+
+  /* Display type — serif, tight, warm */
+  .font-display {
+    font-family: var(--font-serif);
+    font-optical-sizing: auto;
+    letter-spacing: -0.018em;
+  }
+
+  /* Tabular numerals for any lab data rendered in mono */
+  .tabular {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum";
+  }
+
+  ::selection {
+    background: color-mix(in oklab, var(--color-brand) 20%, transparent);
+    color: var(--color-brand-strong);
+  }
+
+  /* Keyboard focus — visible, brand-colored, consistent everywhere */
+  :where(a, button, input, select, textarea, [tabindex]):focus-visible {
+    outline: 2px solid var(--color-brand);
+    outline-offset: 2px;
+    border-radius: 0.375rem;
+  }
+
+  /* Slim, warm scrollbar */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-line-strong) transparent;
+  }
+  *::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  *::-webkit-scrollbar-thumb {
+    background-color: var(--color-line-strong);
+    border-radius: 9999px;
+    border: 3px solid var(--color-paper);
+  }
+
+  @keyframes rise {
+    from {
+      opacity: 0;
+      transform: translateY(12px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+  @keyframes fade {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+}
+
+@layer components {
+  /* Native <select> chevron (ink-muted), used by the Select primitive */
+  .field-select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%235c6b63' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+    background-size: 1.05rem;
+  }
+}
+
+@layer utilities {
+  .animate-rise {
+    animation: var(--animate-rise);
+  }
+  .animate-fade {
+    animation: var(--animate-fade);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  .animate-rise,
+  .animate-fade {
+    animation: none !important;
+  }
+}
