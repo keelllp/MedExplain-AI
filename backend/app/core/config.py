@@ -73,7 +73,9 @@ class Settings(BaseSettings):
     ollama_model: str = "gemma3:4b"
     ollama_timeout: int = 180                  # seconds (CPU inference is slow)
     llm_temperature: float = 0.2               # low → grounded, low-drift explanations
-    llm_max_output_tokens: int = 700
+    # Roomy enough that a "thinking" model (e.g. gemini-2.5-flash) has budget for its internal
+    # reasoning AND the actual answer text — a too-small budget yields empty output.
+    llm_max_output_tokens: int = 2048
 
     # --- rag ---
     # False = deterministic canonical-name KB lookup (default; no heavy deps, exact for

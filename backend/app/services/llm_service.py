@@ -11,6 +11,8 @@ returns — this module never bypasses it.
 
 from __future__ import annotations
 
+import time
+
 import httpx
 
 from app.core.config import settings
@@ -76,27 +78,41 @@ def _ollama(system: str, user: str) -> str | None:
 def _gemini(system: str, user: str) -> str | None:
     if not settings.gemini_available:
         return None
-    try:
-        url = (
-            "https://generativelanguage.googleapis.com/v1beta/models/"
-            f"{settings.gemini_model}:generateContent"
-        )
-        resp = httpx.post(
-            url,
-            params={"key": settings.gemini_api_key},
-            json={
-                "systemInstruction": {"parts": [{"text": system}]},
-                "contents": [{"parts": [{"text": user}]}],
-                "generationConfig": {
-                    "temperature": settings.llm_temperature,
-                    "maxOutputTokens": settings.llm_max_output_tokens,
-                },
-            },
-            timeout=settings.gemini_timeout,
-        )
-        resp.raise_for_status()
-        parts = resp.json()["candidates"][0]["content"]["parts"]
-        return "".join(p.get("text", "") for p in parts).strip() or None
-    except Exception as exc:  # noqa: BLE001
-        logger.info("Gemini call failed (%s); falling back", type(exc).__name__)
-        return None
+    url = (
+        "https://generativelanguage.googleapis.com/v1beta/models/"
+        f"{settings.gemini_model}:generateContent"
+    )
+    payload = {
+        "systemInstruction": {"parts": [{"text": system}]},
+        "contents": [{"parts": [{"text": user}]}],
+        "generationConfig": {
+            "temperature": settings.llm_temperature,
+            "maxOutputTokens": settings.llm_max_output_tokens,
+        },
+    }
+    # The free tier returns transient 429/500/503 ("model overloaded") under load. Retry a
+    # couple of times before giving up — on final failure the caller uses the offline template.
+    for attempt in range(3):
+        try:
+            resp = httpx.post(
+                url,
+                params={"key": settings.gemini_api_key},
+                json=payload,
+                timeout=settings.gemini_timeout,
+            )
+            if resp.status_code in (429, 500, 502, 503):
+                if attempt < 2:
+                    time.sleep(1.0 * (attempt + 1))
+                    continue
+                logger.info("Gemini overloaded (HTTP %s); falling back", resp.status_code)
+                return None
+            resp.raise_for_status()
+            parts = resp.json()["candidates"][0]["content"]["parts"]
+            return "".join(p.get("text", "") for p in parts).strip() or None
+        except Exception as exc:  # noqa: BLE001
+            if attempt < 2:
+                time.sleep(1.0 * (attempt + 1))
+                continue
+            logger.info("Gemini call failed (%s); falling back", type(exc).__name__)
+            return None
+    return None
