@@ -51,7 +51,8 @@ interface RequestOptions {
 }
 
 async function request<T>(path: string, opts: RequestOptions = {}): Promise<T> {
-  const headers: Record<string, string> = {};
+  // Skip ngrok's free-tier browser interstitial so the API returns JSON, not HTML.
+  const headers: Record<string, string> = { "ngrok-skip-browser-warning": "true" };
   if (opts.auth !== false) {
     const token = getToken();
     if (token) headers["Authorization"] = `Bearer ${token}`;
@@ -139,7 +140,10 @@ export const getTrend = (biomarker: string) =>
 // --- export (binary PDF; bypasses the JSON request() helper) ---
 export async function exportReportPdf(reportId: number, includeChat = false): Promise<Blob> {
   const token = getToken();
-  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    "ngrok-skip-browser-warning": "true",
+  };
   if (token) headers["Authorization"] = `Bearer ${token}`;
 
   let res: Response;
